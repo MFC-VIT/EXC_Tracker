@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model Student {
+  registrationNumber String             @id
+  name               String
+  email              String             @unique
+  phoneNumber        String?
+  department         String?
+  year               Int?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  attendanceRecords  AttendanceRecord[]
+}
+
+model AdminUser {
+  id           String      @id @default(cuid())
+  name         String
+  email        String      @unique
+  passwordHash String
+  role         AdminRole   @default(ADMIN)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  createdEvents ClubEvent[]
+}
+
+model ClubEvent {
+  id               String             @id @default(cuid())
+  title            String
+  description      String?
+  venue            String
+  category         String
+  startsAt         DateTime
+  durationMinutes  Int
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  createdById      String
+  createdBy        AdminUser          @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  attendanceRecords AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id                String           @id @default(cuid())
+  eventId            String
+  studentId          String
+  status             AttendanceStatus @default(ABSENT)
+  attendedMinutes    Int?
+  markedAt           DateTime         @default(now())
+  event              ClubEvent        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student            Student          @relation(fields: [studentId], references: [registrationNumber], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+}
