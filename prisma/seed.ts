@@ -17,10 +17,20 @@ type CsvRow = {
   notes?: string;
 };
 
+function readRequiredEnv(key: string) {
+  const value = process.env[key]?.trim();
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+
+  return value;
+}
+
 async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL ?? "admin@vitstudent.ac.in";
-  const password = process.env.ADMIN_PASSWORD ?? "ChangeMe123!";
-  const name = process.env.ADMIN_NAME ?? "EXC Super Admin";
+  const email = readRequiredEnv("ADMIN_EMAIL");
+  const password = readRequiredEnv("ADMIN_PASSWORD");
+  const name = readRequiredEnv("ADMIN_NAME");
   const passwordHash = await bcrypt.hash(password, 10);
 
   await prisma.adminUser.upsert({
@@ -30,8 +40,8 @@ async function seedAdmin() {
       email,
       name,
       passwordHash,
-      role: AdminRole.SUPER_ADMIN
-    }
+      role: AdminRole.SUPER_ADMIN,
+    },
   });
 }
 
@@ -48,7 +58,7 @@ async function seedStudents() {
   const rows = parse(file, {
     columns: true,
     skip_empty_lines: true,
-    trim: true
+    trim: true,
   }) as CsvRow[];
 
   for (const row of rows) {
@@ -64,7 +74,7 @@ async function seedStudents() {
         phoneNumber: row.phoneNumber || null,
         department: row.department || null,
         year: row.year ? Number(row.year) : null,
-        notes: row.notes || null
+        notes: row.notes || null,
       },
       create: {
         registrationNumber: row.registrationNumber,
@@ -73,8 +83,8 @@ async function seedStudents() {
         phoneNumber: row.phoneNumber || null,
         department: row.department || null,
         year: row.year ? Number(row.year) : null,
-        notes: row.notes || null
-      }
+        notes: row.notes || null,
+      },
     });
   }
 }
